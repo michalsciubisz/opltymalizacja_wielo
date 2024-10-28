@@ -1,43 +1,44 @@
 import tkinter as tk
+import numpy as np
 from tkinter import ttk
-
 from algorithms import algorytm_bez_filtracji, algorytm_punkt_idealny, filtracja_zdominowanych
 
 # Main application window
 root = tk.Tk()
 root.title("GUI Skeleton")
-root.geometry("800x500")  # Adjust the size as needed
+root.geometry("900x600")  # Adjust the size as needed
 
 # Variables
 kierunek_options = ["Min", "Max"]
 criterion_count = 0
+data_sets = {} # {criterion_name : list of values}
 
 # Function to add a new criterion
 def add_criterion():
     global criterion_count
     criterion_count += 1
     name = f"Kryterium {criterion_count}"
-    # Insert with a placeholder Lp number, which will be updated in renumber_criteria
     criteria_tree.insert("", "end", values=(criterion_count, name, kierunek_options[0]))
-    renumber_criteria()  # Refresh Lp column after adding
+    renumber_criteria()
 
 # Function to remove selected criterion and re-number "Lp" column
 def remove_criterion():
+    global data_sets
     selected_item = criteria_tree.selection()
     if selected_item:
         criteria_tree.delete(selected_item)
-        renumber_criteria()  # Refresh Lp column after removing
+        renumber_criteria()
+    if data_sets != {}:
+        update_datasets()
 
 # Function to renumber the Lp column to always be sequential
 def renumber_criteria():
     for index, item in enumerate(criteria_tree.get_children(), start=1):
         current_values = criteria_tree.item(item, "values")
-        # Update Lp column (index), keep existing Nazwa and Kierunek
-        criteria_tree.item(item, values=(index, current_values[1], current_values[2]))
+        criteria_tree.item(item, values=(index, f"Kryterium {index}", current_values[2]))
 
 # Function to display dropdown over the selected row
 def show_kierunek_dropdown(event):
-    # Get selected item
     selected_item = criteria_tree.selection()
     if not selected_item:
         return
@@ -61,7 +62,7 @@ def save_kierunek_selection(event):
         row_id = selected_item[0]
         values = criteria_tree.item(row_id, "values")
         criteria_tree.set(row_id, column="Kierunek", value=kierunek_var.get())
-    kierunek_dropdown.place_forget()  # Hide the dropdown after selection
+    kierunek_dropdown.place_forget()
 
 # Function to enable editing of "Nazwa" column
 def edit_nazwa(event):
@@ -80,7 +81,7 @@ def edit_nazwa(event):
     # Position the entry widget over the selected cell
     nazwa_entry.place(x=x + criteria_tree.winfo_x(), y=y + criteria_tree.winfo_y() + height)
     nazwa_entry.focus()
-    nazwa_entry.select_range(0, tk.END)  # Select text for easy editing
+    nazwa_entry.select_range(0, tk.END)
 
 # Function to save the edited "Nazwa" value
 def save_nazwa(event):
@@ -89,19 +90,19 @@ def save_nazwa(event):
         row_id = selected_item[0]
         new_value = nazwa_var.get()
         criteria_tree.set(row_id, column="Nazwa", value=new_value)
-    nazwa_entry.place_forget()  # Hide the entry after editing
+    nazwa_entry.place_forget()
 
 # Section 1: Criteria Editor
 criteria_frame = ttk.LabelFrame(root, text="Edytor kryteriów")
 criteria_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
 
-# Treeview for criteria with "Lp" as the first column
+# Treeview for criteria with "Lp", "Nazwa" and "Kierunek" columns
 columns = ("Lp", "Nazwa", "Kierunek")
 criteria_tree = ttk.Treeview(criteria_frame, columns=columns, show="headings")
 criteria_tree.heading("Lp", text="Lp")
 criteria_tree.heading("Nazwa", text="Nazwa")
 criteria_tree.heading("Kierunek", text="Kierunek")
-criteria_tree.column("Lp", width=40)         # Set width for Lp column
+criteria_tree.column("Lp", width=40)
 criteria_tree.column("Nazwa", width=120)
 criteria_tree.column("Kierunek", width=60)
 criteria_tree.grid(row=0, column=0, columnspan=2, sticky="nsew")
@@ -130,6 +131,57 @@ add_criteria_button.grid(row=1, column=0, padx=5, pady=5, sticky="ew")
 remove_criteria_button = ttk.Button(criteria_frame, text="Usuń", command=remove_criterion)
 remove_criteria_button.grid(row=1, column=1, padx=5, pady=5, sticky="ew")
 
+
+
+def generate_numbers():
+    data = []
+    type_of_distribution = str(distribution_option.get())
+    mean = float(mean_entry.get())
+    std = float(std_entry.get())
+    number_obj = int(objects_entry.get())
+    match type_of_distribution:
+        case "normal":
+            data = np.random.normal(mean, std, number_obj)
+        case "uniform":
+            low = mean - (std * np.sqrt(3))
+            high = mean + (std * np.sqrt(3))
+            data = np.random.uniform(low, high, number_obj)
+        case "poisson":
+            lam = mean
+            data = np.random.poisson(lam, number_obj)
+        case "exponential":
+            scale = mean
+            data = np.random.exponential(scale, number_obj)
+    return data
+
+def generate_datasets():
+    global data_sets
+    data_sets = {}
+    for _, item in enumerate(criteria_tree.get_children(), start=1):
+        current_values = criteria_tree.item(item, "values")
+        data_sets[current_values[1]] = generate_numbers()
+    setup_values_tree(data_sets)
+    update_combobox()
+
+def update_combobox():
+    which_sorted['values'] = list(data_sets.keys())
+
+def sort_datasets():
+    global data_sets
+    key_to_sort = str(which_sorted.get())
+    data_sets[key_to_sort] = sorted(data_sets[key_to_sort])
+    setup_values_tree(data_sets)
+
+def update_datasets():
+    global data_sets
+    keys_to_keep = []
+    for _, item in enumerate(criteria_tree.get_children(), start=1):
+        current_values = criteria_tree.item(item, "values")
+        keys_to_keep.append(current_values[1])
+    data_sets = {key: value for key, value in data_sets.items() if key in keys_to_keep}
+    setup_values_tree(data_sets)
+    update_combobox()
+
 # Section 2: Generation Settings
 generation_frame = ttk.LabelFrame(root, text="Generacja")
 generation_frame.grid(row=1, column=0, padx=10, pady=10, sticky="nsew")
@@ -137,7 +189,7 @@ generation_frame.grid(row=1, column=0, padx=10, pady=10, sticky="nsew")
 # Options within Generation Frame
 distribution_label = ttk.Label(generation_frame, text="Rozkład")
 distribution_label.grid(row=0, column=0, padx=5, pady=5, sticky="w")
-distribution_option = ttk.Combobox(generation_frame, values=["Ekspotencjalny", "Normalny", "Uniform"])
+distribution_option = ttk.Combobox(generation_frame, values=["normal", "uniform", "poisson", "exponential"])
 distribution_option.grid(row=0, column=1, padx=5, pady=5)
 
 mean_label = ttk.Label(generation_frame, text="Średnia")
@@ -145,36 +197,93 @@ mean_label.grid(row=1, column=0, padx=5, pady=5, sticky="w")
 mean_entry = ttk.Entry(generation_frame)
 mean_entry.grid(row=1, column=1, padx=5, pady=5)
 
+std_label = ttk.Label(generation_frame, text="Odchylenie")
+std_label.grid(row=2, column=0, padx=5, pady=5, sticky="w")
+std_entry = ttk.Entry(generation_frame)
+std_entry.grid(row=2, column=1, padx=5, pady=5)
+
 objects_label = ttk.Label(generation_frame, text="Liczba obiektów")
-objects_label.grid(row=2, column=0, padx=5, pady=5, sticky="w")
+objects_label.grid(row=3, column=0, padx=5, pady=5, sticky="w")
 objects_entry = ttk.Entry(generation_frame)
-objects_entry.grid(row=2, column=1, padx=5, pady=5)
+objects_entry.grid(row=3, column=1, padx=5, pady=5)
 
 # Generate and Sort buttons
-generate_button = ttk.Button(generation_frame, text="Generuj")
-generate_button.grid(row=3, column=0, padx=5, pady=5, sticky="ew")
+generate_button = ttk.Button(generation_frame, text="Generuj", command=generate_datasets)
+generate_button.grid(row=4, column=0, padx=5, pady=5, sticky="ew")
 
-sort_button = ttk.Button(generation_frame, text="Sortuj")
-sort_button.grid(row=3, column=1, padx=5, pady=5, sticky="ew")
+sort_button = ttk.Button(generation_frame, text="Sortuj", command=sort_datasets)
+sort_button.grid(row=4, column=1, padx=5, pady=5, sticky="ew")
+
+which_sorted = ttk.Combobox(generation_frame, values=list(data_sets.keys()))
+which_sorted.grid(row=4, column=2, padx=5, pady=5)
+
 
 # Section 3: Values Editor
 values_frame = ttk.LabelFrame(root, text="Edytor wartości")
 values_frame.grid(row=0, column=1, rowspan=2, padx=10, pady=10, sticky="nsew")
 
-# Treeview for values
-values_tree = ttk.Treeview(values_frame, columns=("Kryterium 1", "Kryterium 2", "Kryterium 3",
-                                                  "Kryterium 4", "Kryterium 5", "Kryterium 6",
-                                                  "Kryterium 7", "Kryterium 8"), show="headings")
-for i in range(1, 9):
-    values_tree.heading(f"Kryterium {i}", text=f"Kryterium {i}")
+# Dynamically adjust columns in values_tree based on keys in the dictionary
+def setup_values_tree(datasets):
+    # Clear any existing columns
+    for column in values_tree["columns"]:
+        values_tree.heading(column, text="")
+
+    # Define columns with "lp" as the first column and keys of the dictionary as the rest
+    columns = ["lp"] + list(datasets.keys())
+    values_tree["columns"] = columns
+
+    # Set up headings for each column
+    for col in columns:
+        values_tree.heading(col, text=col.capitalize())
+        if col == "lp":
+            values_tree.column(col, width=10, anchor="center")  # Set smaller width for "lp"
+        else:
+            values_tree.column(col, width=40)  # Wider width for other columns
+
+    # Add data to the tree
+    values_tree.delete(*values_tree.get_children())  # Clear any previous rows
+    max_length = max(len(values) for values in datasets.values())  # Determine maximum row count
+    for i in range(max_length):
+        row = [i + 1]  # Start with lp value
+        for key in datasets.keys():
+            # Append value if it exists, otherwise append empty string
+            row.append(f"{float(datasets[key][i]):.4f}" if i < len(datasets[key]) else "")
+        values_tree.insert("", "end", values=row)
+
+# Treeview for values with scrollbars
+values_tree = ttk.Treeview(values_frame, show="headings")
 values_tree.grid(row=0, column=0, columnspan=2, sticky="nsew")
 
-# Add and Remove buttons for Values Editor
+# Add vertical scrollbar
+vertical_scrollbar = ttk.Scrollbar(values_frame, orient="vertical", command=values_tree.yview)
+values_tree.configure(yscrollcommand=vertical_scrollbar.set)
+vertical_scrollbar.grid(row=0, column=2, sticky="ns")
+
+# Add horizontal scrollbar
+horizontal_scrollbar = ttk.Scrollbar(values_frame, orient="horizontal", command=values_tree.xview)
+values_tree.configure(xscrollcommand=horizontal_scrollbar.set)
+horizontal_scrollbar.grid(row=1, column=0, columnspan=2, sticky="ew")
+
+# Nie wiem po co te przyciski tutaj
 add_value_button = ttk.Button(values_frame, text="Dodaj")
-add_value_button.grid(row=1, column=0, padx=5, pady=5, sticky="ew")
+add_value_button.grid(row=2, column=0, padx=5, pady=5, sticky="ew")
 
 remove_value_button = ttk.Button(values_frame, text="Usuń")
-remove_value_button.grid(row=1, column=1, padx=5, pady=5, sticky="ew")
+remove_value_button.grid(row=2, column=1, padx=5, pady=5, sticky="ew")
+
+
+
+def render_animation():
+    pass
+
+def stop_work():
+    pass
+
+def benchmark():
+    pass
+
+def solve():
+    pass
 
 # Section 4: Actions
 actions_frame = ttk.LabelFrame(root, text="Akcje")
@@ -183,20 +292,20 @@ actions_frame.grid(row=2, column=0, columnspan=2, padx=10, pady=10, sticky="nsew
 # Algorithm selection and buttons
 algorithm_label = ttk.Label(actions_frame, text="Algorytm:")
 algorithm_label.grid(row=0, column=0, padx=5, pady=5, sticky="w")
-algorithm_option = ttk.Combobox(actions_frame, values=["Naiwny", "Zaawansowany"])
+algorithm_option = ttk.Combobox(actions_frame, values=["bez_filtracji", "z_filtracja", "punkt_idealny"])
 algorithm_option.grid(row=0, column=1, padx=5, pady=5)
 
-render_button = ttk.Button(actions_frame, text="Renderuj animację")
+render_button = ttk.Button(actions_frame, text="Renderuj animację", command=render_animation)
 render_button.grid(row=1, column=0, padx=5, pady=5, sticky="ew")
 
-stop_button = ttk.Button(actions_frame, text="Przerwij")
+stop_button = ttk.Button(actions_frame, text="Przerwij", command=stop_work)
 stop_button.grid(row=1, column=1, padx=5, pady=5, sticky="ew")
 
-benchmark_button = ttk.Button(actions_frame, text="Benchmark")
-benchmark_button.grid(row=2, column=0, padx=5, pady=5, sticky="ew")
+benchmark_button = ttk.Button(actions_frame, text="Benchmark", command=benchmark)
+benchmark_button.grid(row=1, column=2, padx=5, pady=5, sticky="ew")
 
-solve_button = ttk.Button(actions_frame, text="Rozwiąż")
-solve_button.grid(row=2, column=1, padx=5, pady=5, sticky="ew")
+solve_button = ttk.Button(actions_frame, text="Rozwiąż", command=solve)
+solve_button.grid(row=1, column=3, padx=5, pady=5, sticky="ew")
 
 # Adjust grid weights for resizing
 root.grid_rowconfigure(0, weight=1)
