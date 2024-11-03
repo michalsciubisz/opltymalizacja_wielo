@@ -139,19 +139,18 @@ def generate_numbers():
     mean = float(mean_entry.get())
     std = float(std_entry.get())
     number_obj = int(objects_entry.get())
-    match type_of_distribution:
-        case "normal":
-            data = np.random.normal(mean, std, number_obj)
-        case "uniform":
-            low = mean - (std * np.sqrt(3))
-            high = mean + (std * np.sqrt(3))
-            data = np.random.uniform(low, high, number_obj)
-        case "poisson":
-            lam = mean
-            data = np.random.poisson(lam, number_obj)
-        case "exponential":
-            scale = mean
-            data = np.random.exponential(scale, number_obj)
+    if type_of_distribution == "normal":
+        data = np.random.normal(mean, std, number_obj)
+    elif type_of_distribution == "uniform":
+        low = mean - (std * np.sqrt(3))
+        high = mean + (std * np.sqrt(3))
+        data = np.random.uniform(low, high, number_obj)
+    elif type_of_distribution == "poisson":
+        lam = mean
+        data = np.random.poisson(lam, number_obj)
+    elif type_of_distribution == "exponential":
+        scale = mean
+        data = np.random.exponential(scale, number_obj)
     return data
 
 def generate_datasets():
