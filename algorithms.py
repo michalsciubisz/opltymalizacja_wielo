@@ -3,29 +3,30 @@ import time
 import matplotlib.pyplot as plt
 
 def algorytm_bez_filtracji(X):
+    X_list = X.tolist()
     P = []
     steps = 0
-    comparisions = 0
+    comparisons = 0
     i = 0
 
-    while i < len(X):
-        Y = np.array(X[i])
+    while i < len(X_list):
+        Y = np.array(X_list[i])
         fl = 0
         j = i + 1
 
-        while j < len(X):
+        while j < len(X_list):
             steps += 1
-            comparisions += 1
+            comparisons += 1
 
-            Xj = np.array(X[j])
+            Xj = np.array(X_list[j])
             if np.all(Y <= Xj) and np.any(Y < Xj):
-                X.pop(j) 
+                X_list.pop(j) 
             elif np.all(Xj <= Y) and np.any(Xj < Y):
                 fl = 1
                 Y = Xj
-                X.pop(i)
+                X_list.pop(i)
                 j = i + 1
-                comparisions += 1
+                comparisons += 1
             else:
                 j += 1
 
@@ -33,12 +34,12 @@ def algorytm_bez_filtracji(X):
         steps += 1
 
         if fl == 0:
-            X.pop(i)
+            X_list.pop(i)
         else:
             i += 1
         steps += 1 
 
-    return P, steps, comparisions
+    return P, steps, comparisons
 
 def dominuje(A, B, comparisions):
     # Punkt A dominuje nad punktem B, jeśli każda współrzędna A jest <= każdej współrzędnej B

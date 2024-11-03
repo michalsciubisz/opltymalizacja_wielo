@@ -315,18 +315,45 @@ remove_value_button = ttk.Button(values_frame, text="Usuń", command=remove_sele
 remove_value_button.grid(row=2, column=1, padx=5, pady=5, sticky="ew")
 
 
+def adjust_data():
+    global data_sets 
+    n = len(next(iter(data_sets.values())))
+    array_data = np.array([[data_sets[key][i] for key in data_sets] for i in range(n)])
+    return array_data
 
 def render_animation():
-    pass
+    X = adjust_data()
+    selected_algorithm = algorithm_option.get()
 
-def stop_work():
-    pass
+    if selected_algorithm == "bez_filtracji":
+        P, steps, comparisions = algorytm_bez_filtracji(X)
+    elif selected_algorithm == "z_filtracji":
+        P, steps, comparisions = filtracja_zdominowanych(X)
+    elif selected_algorithm == "punkt_idealny":
+        results = algorytm_punkt_idealny(X)
+
 
 def benchmark():
     pass
 
 def solve():
-    pass
+    X = adjust_data()
+    selected_algorithm = algorithm_option.get()
+
+    if selected_algorithm == "bez_filtracji":
+        P, steps, comparisions = algorytm_bez_filtracji(X)
+    elif selected_algorithm == "z_filtracja":
+        P, steps, comparisions = filtracja_zdominowanych(X)
+    elif selected_algorithm == "punkt_idealny":
+        results = algorytm_punkt_idealny(X)
+        P = results["Non-dominated points"]
+        steps = results["Steps"]
+        comparisions = results["Comparisons"]
+    else:
+        print("Nieznany algorytm!")
+        return
+
+    print(P, steps, comparisions)
 
 # Section 4: Actions
 actions_frame = ttk.LabelFrame(root, text="Akcje")
@@ -341,14 +368,11 @@ algorithm_option.grid(row=0, column=1, padx=5, pady=5)
 render_button = ttk.Button(actions_frame, text="Renderuj animację", command=render_animation)
 render_button.grid(row=1, column=0, padx=5, pady=5, sticky="ew")
 
-stop_button = ttk.Button(actions_frame, text="Przerwij", command=stop_work)
-stop_button.grid(row=1, column=1, padx=5, pady=5, sticky="ew")
-
 benchmark_button = ttk.Button(actions_frame, text="Benchmark", command=benchmark)
-benchmark_button.grid(row=1, column=2, padx=5, pady=5, sticky="ew")
+benchmark_button.grid(row=1, column=1, padx=5, pady=5, sticky="ew")
 
 solve_button = ttk.Button(actions_frame, text="Rozwiąż", command=solve)
-solve_button.grid(row=1, column=3, padx=5, pady=5, sticky="ew")
+solve_button.grid(row=1, column=2, padx=5, pady=5, sticky="ew")
 
 # Adjust grid weights for resizing
 root.grid_rowconfigure(0, weight=1)
