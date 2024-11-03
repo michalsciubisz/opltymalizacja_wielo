@@ -167,25 +167,28 @@ def algorytm_punkt_idealny(X):
 def run_benchmark(X):
     results = {}
 
-    X_copy = X.copy().tolist()
+    X_copy = X.copy()
     results1 = algorytm_bez_filtracji(X_copy)
     P1 = results1["Non-dominated points"]
     steps1 = results1["Steps"]
-    comparisons1 = results1["Comparisions"]
-    results["Algorytm bez filtracji"] = {"Steps": steps1, "Comparisons": comparisons1, "Non-dominated": len(P1), "Points": P1}
+    comparisons1 = results1["Comparisons"]
+    time1 = results1["Time (sec)"]
+    results["Algorytm bez filtracji"] = {"Steps": steps1, "Comparisons": comparisons1, "Non-dominated": len(P1), "Points": P1, "Time (sec)": time1}
 
 
     X_copy = X.copy().tolist()
     results2 = filtracja_zdominowanych(X_copy)
     P2 = results2["Non-dominated points"]
     steps2 = results2["Steps"]
-    comparisons2 = results2["Comparisions"]
-    results["Algorytm z filtracją"] = {"Steps": steps2, "Comparisons": comparisons2, "Non-dominated": len(P2), "Points": P2}
+    comparisons2 = results2["Comparisons"]
+    time2 = results2["Time (sec)"]
+    results["Algorytm z filtracją"] = {"Steps": steps2, "Comparisons": comparisons2, "Non-dominated": len(P2), "Points": P2, "Time (sec)": time2}
 
     results3 = algorytm_punkt_idealny(X.copy())
     P3 = results3["Non-dominated points"]
     steps3 = results3["Steps"]
-    comparisons3 = results3["Comparisions"]
-    results["Algorytm z punktem idealnym"] = {"Steps": steps3, "Comparisons": comparisons3, "Non-dominated": len(P3), "Points": P3}
+    comparisons3 = results3["Comparisons"]
+    time2 = results2["Time (sec)"]
+    results["Algorytm z punktem idealnym"] = {"Steps": steps3, "Comparisons": comparisons3, "Non-dominated": len(P3), "Points": P3, "Time (sec)": time2}
 
     return results

@@ -329,12 +329,15 @@ def visualize_results(points, data, dimensions=2, steps=0, comparisons=0, algori
 
     plot_window = tk.Toplevel()
     plot_window.title("Wizualizacja wyników")
+    plot_window.geometry("800x600")  # Adjust these values as needed
 
     fig = plt.figure()
 
+    elapsed_time = elapsed_time * 1000
+
     title = f"Wyniki algorytmu: {algorithm_name}\n"
     title += f"Kroki: {steps}, Porównania: {comparisons}\n"
-    title += f"Czas wykonywania {elapsed_time:.4f} [sec]"
+    title += f"Czas wykonywania {elapsed_time:.4f} [ms]"
 
     if dimensions == 2:
         plt.scatter(data[:, 0], data[:, 1], label='Wszystkie punkty', alpha=0.5)
@@ -423,7 +426,21 @@ def render_animation():
     visualize_results(P, X, dimensions, steps, comparisions, selected_algorithm, elapsed_time)
 
 def benchmark():
-    pass
+    X = adjust_data()
+    results = run_benchmark(X)
+
+    result_text = ""
+    for alg in ["Algorytm bez filtracji", "Algorytm z filtracją", "Algorytm z punktem idealnym"]:
+        result_text += f"{alg}:\n"
+        P = results[alg]["Points"]
+        steps = results[alg]["Steps"]
+        comparisons = results[alg]["Comparisons"]
+        time = results[alg]["Time (sec)"]
+        result_text += f"Steps: {steps}\nComparisons: {comparisons}\nTime (sec): {time}\n\nPoints:\n"
+        result_text += "\n".join([str(point) for point in P])
+        result_text += "\n\n"
+
+    show_results_popup(result_text)
 
 def solve():
     X = adjust_data()
