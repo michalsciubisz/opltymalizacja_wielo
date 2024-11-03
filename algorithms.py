@@ -1,26 +1,65 @@
+import numpy as np
+
+# def algorytm_bez_filtracji(X):
+#     P = []
+#     i = 0
+#     while i < len(X):
+#         Y = X[i]
+#         fl = 0
+#         j = i + 1
+#         while j < len(X):
+#             if Y[0] <= X[j][0] and Y[1] <= X[j][1]:
+#                 X.pop(j)
+#             elif X[j][0] <= Y[0] and X[j][1] <= Y[1]:
+#                 X.pop(i)
+#                 fl = 1
+#                 break
+#             else:
+#                 j += 1
+        
+#         if fl == 0:
+#             P.append(Y)
+#             i += 1
+#         else:
+#             fl = 0
+#     return P
+
 def algorytm_bez_filtracji(X):
     P = []
+    steps = 0
+    comparisions = 0
     i = 0
+
     while i < len(X):
-        Y = X[i]
+        Y = np.array(X[i])
         fl = 0
         j = i + 1
+
         while j < len(X):
-            if Y[0] <= X[j][0] and Y[1] <= X[j][1]:
+            steps += 1
+            comparisions += 2
+
+            Xj = np.array(X[j])
+            if np.all(Y <= Xj) and np.any(Y < Xj):
                 X.pop(j)
-            elif X[j][0] <= Y[0] and X[j][1] <= Y[1]:
-                X.pop(i)
+            elif np.all(Xj <= Y) and np.any(Xj < Y):
                 fl = 1
-                break
+                Y = Xj
+                X.pop(i)
+                j = i + 1
             else:
                 j += 1
         
+        P.append(Y.tolist())
+        steps += 1
         if fl == 0:
-            P.append(Y)
-            i += 1
+            X.pop(i)
         else:
-            fl = 0
-    return P
+            i += i
+        steps += 1 
+
+    return P, steps, comparisions
+
 
 def dominuje(A, B):
     # Punkt A dominuje nad punktem B, jeśli każda współrzędna A jest <= każdej współrzędnej B

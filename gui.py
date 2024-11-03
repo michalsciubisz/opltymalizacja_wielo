@@ -1,7 +1,7 @@
 import tkinter as tk
 import numpy as np
 from tkinter import ttk
-from algorithms import algorytm_bez_filtracji, algorytm_punkt_idealny, filtracja_zdominowanych
+from algorithms import *
 
 # Main application window
 root = tk.Tk()
