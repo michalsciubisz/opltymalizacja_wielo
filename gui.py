@@ -2,6 +2,9 @@ import tkinter as tk
 import numpy as np
 from tkinter import ttk
 from algorithms import *
+from tkinter import filedialog
+import pandas as pd
+
 
 # Main application window
 root = tk.Tk()
@@ -263,11 +266,52 @@ horizontal_scrollbar = ttk.Scrollbar(values_frame, orient="horizontal", command=
 values_tree.configure(xscrollcommand=horizontal_scrollbar.set)
 horizontal_scrollbar.grid(row=1, column=0, columnspan=2, sticky="ew")
 
+
+def load_xls_file():
+    file_path = filedialog.askopenfilename(filetypes=[("Excel files", "*.xls *.xlsx")])
+    if file_path:
+        data = pd.read_excel(file_path)  # Load the data using pandas
+
+        # Convert the data to dictionary format {column_name: values} for each column
+        global data_sets
+        data_sets = {col: data[col].tolist() for col in data.columns}
+
+        # Update criteria list in criteria_tree if needed
+        for criterion in data.columns:
+            criterion_count = len(criteria_tree.get_children()) + 1
+            criteria_tree.insert("", "end", values=(criterion_count, criterion, kierunek_options[0]))
+
+        # Display data in values_tree
+        setup_values_tree(data_sets)
+        update_combobox()
+
 # Nie wiem po co te przyciski tutaj
-add_value_button = ttk.Button(values_frame, text="Dodaj")
+add_value_button = ttk.Button(values_frame, text="Dodaj", command=load_xls_file)
 add_value_button.grid(row=2, column=0, padx=5, pady=5, sticky="ew")
 
-remove_value_button = ttk.Button(values_frame, text="Usuń")
+
+def remove_selected_row():
+    selected_items = values_tree.selection()  # Get all selected items
+    if not selected_items:
+        return
+
+    # Gather row indices (lp) of selected items, convert to zero-based indices, and sort in descending order
+    row_indices = sorted([int(values_tree.item(item)["values"][0]) - 1 for item in selected_items], reverse=True)
+
+    # Remove each selected row from data_sets for each criterion in descending index order
+    for row_index in row_indices:
+        for key in data_sets.keys():
+            if row_index < data_sets[key].shape[0]:
+                data_sets[key] = np.delete(data_sets[key], row_index, axis=0)
+
+    # Remove the selected rows from values_tree
+    for item in selected_items:
+        values_tree.delete(item)
+
+    # Refresh the Treeview to reassign lp numbers correctly
+    setup_values_tree(data_sets)
+
+remove_value_button = ttk.Button(values_frame, text="Usuń", command=remove_selected_row)
 remove_value_button.grid(row=2, column=1, padx=5, pady=5, sticky="ew")
 
 
