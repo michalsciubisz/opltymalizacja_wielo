@@ -4,11 +4,14 @@ from tkinter import ttk
 from algorithms import *
 from tkinter import filedialog
 import pandas as pd
-
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import csv
+import os
 
 # Main application window
 root = tk.Tk()
-root.title("GUI Skeleton")
+root.title("Optymalizacja dyskretna wielokryterialna")
 root.geometry("900x600")  # Adjust the size as needed
 
 # Variables
@@ -315,6 +318,84 @@ remove_value_button = ttk.Button(values_frame, text="Usuń", command=remove_sele
 remove_value_button.grid(row=2, column=1, padx=5, pady=5, sticky="ew")
 
 
+def visualize_results(points, data, dimensions=2, steps=0, comparisons=0, algorithm_name="", elapsed_time = 0):
+    points = np.array(points)
+    data = np.array(data)
+
+    if dimensions > 4:
+        dimensions = 4
+        data = data[:, :4]
+        points = points[:, :4]
+
+    plot_window = tk.Toplevel()
+    plot_window.title("Wizualizacja wyników")
+
+    fig = plt.figure()
+
+    title = f"Wyniki algorytmu: {algorithm_name}\n"
+    title += f"Kroki: {steps}, Porównania: {comparisons}\n"
+    title += f"Czas wykonywania {elapsed_time:.4f} [sec]"
+
+    if dimensions == 2:
+        plt.scatter(data[:, 0], data[:, 1], label='Wszystkie punkty', alpha=0.5)
+        plt.scatter([p[0] for p in points], [p[1] for p in points], color='red', label='Punkty niezdominowane')
+        plt.xlabel("Kryterium 1")
+        plt.ylabel("Kryterium 2")
+    elif dimensions == 3:
+        ax = fig.add_subplot(111, projection='3d')
+        ax.scatter(data[:, 0], data[:, 1], data[:, 2], label='Wszystkie punkty', alpha=0.5)
+        ax.scatter([p[0] for p in points], [p[1] for p in points], [p[2] for p in points], color='red', label='Punkty niezdominowane')
+        ax.set_xlabel("Kryterium 1")
+        ax.set_ylabel("Kryterium 2")
+        ax.set_zlabel("Kryterium 3")
+    elif dimensions >= 4:
+        ax = fig.add_subplot(111, projection='3d')
+        
+        norm = plt.Normalize(data[:, 3].min(), data[:, 3].max())
+        colors = plt.cm.viridis(norm(data[:, 3]))
+        
+        ax.scatter(data[:, 0], data[:, 1], data[:, 2], c=colors, label='Wszystkie punkty', alpha=0.5)
+        ax.scatter([p[0] for p in points], [p[1] for p in points], [p[2] for p in points], color='red', label='Punkty niezdominowane')
+        
+        ax.set_xlabel("Kryterium 1")
+        ax.set_ylabel("Kryterium 2")
+        ax.set_zlabel("Kryterium 3")
+        
+        mappable = plt.cm.ScalarMappable(norm=norm, cmap='viridis')
+        mappable.set_array([])
+
+        cbar = plt.colorbar(mappable, ax=ax)
+        cbar.set_label('Kryterium 4')
+
+    plt.title(title)
+    plt.legend()
+
+    canvas = FigureCanvasTkAgg(fig, master=plot_window)
+    canvas.draw()
+    canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+
+    close_button = tk.Button(plot_window, text="Zamknij", command=plot_window.destroy)
+    close_button.pack(pady=5)
+
+def show_results_popup(result_text):
+    # Create a new Toplevel window
+    popup = tk.Toplevel(root)
+    popup.title("Wyniki")
+
+    # Add a label and a text widget with scroll bar
+    tk.Label(popup, text="Wyniki algorytmu:").pack(pady=10)
+    text_area = tk.Text(popup, wrap="word", width=60, height=20)
+    text_area.pack(pady=10, padx=10)
+
+    # Insert results into the text widget
+    text_area.insert("1.0", result_text)
+    text_area.config(state="disabled")  # Make the text read-only
+
+    # Add scrollbar to text area
+    scrollbar = tk.Scrollbar(popup, command=text_area.yview)
+    text_area.config(yscrollcommand=scrollbar.set)
+    scrollbar.pack(side="right", fill="y")
+
 def adjust_data():
     global data_sets 
     n = len(next(iter(data_sets.values())))
@@ -326,12 +407,20 @@ def render_animation():
     selected_algorithm = algorithm_option.get()
 
     if selected_algorithm == "bez_filtracji":
-        P, steps, comparisions = algorytm_bez_filtracji(X)
-    elif selected_algorithm == "z_filtracji":
-        P, steps, comparisions = filtracja_zdominowanych(X)
+        results = algorytm_bez_filtracji(X)
+    elif selected_algorithm == "z_filtracja":
+        results = filtracja_zdominowanych(X)
     elif selected_algorithm == "punkt_idealny":
         results = algorytm_punkt_idealny(X)
 
+    P = results["Non-dominated points"]
+    steps = results["Steps"]
+    comparisions = results["Comparisons"]
+    elapsed_time = results["Time (sec)"]
+
+    dimensions = X.shape[1]
+    
+    visualize_results(P, X, dimensions, steps, comparisions, selected_algorithm, elapsed_time)
 
 def benchmark():
     pass
@@ -341,19 +430,21 @@ def solve():
     selected_algorithm = algorithm_option.get()
 
     if selected_algorithm == "bez_filtracji":
-        P, steps, comparisions = algorytm_bez_filtracji(X)
+        results = algorytm_bez_filtracji(X)
     elif selected_algorithm == "z_filtracja":
-        P, steps, comparisions = filtracja_zdominowanych(X)
+        results = filtracja_zdominowanych(X)
     elif selected_algorithm == "punkt_idealny":
         results = algorytm_punkt_idealny(X)
-        P = results["Non-dominated points"]
-        steps = results["Steps"]
-        comparisions = results["Comparisons"]
     else:
-        print("Nieznany algorytm!")
+        tk.messagebox.showinfo("Nieznany algorytm!")
         return
+    P = results["Non-dominated points"]
+    steps = results["Steps"]
+    comparisons = results["Comparisons"]
+    result_text = f"Steps: {steps}\nComparisons: {comparisons}\n\nPoints:\n"
+    result_text += "\n".join([str(point) for point in P])
 
-    print(P, steps, comparisions)
+    show_results_popup(result_text)
 
 # Section 4: Actions
 actions_frame = ttk.LabelFrame(root, text="Akcje")

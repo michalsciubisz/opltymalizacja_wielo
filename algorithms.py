@@ -3,6 +3,7 @@ import time
 import matplotlib.pyplot as plt
 
 def algorytm_bez_filtracji(X):
+    start_time = time.time()
     X_list = X.tolist()
     P = []
     steps = 0
@@ -39,7 +40,17 @@ def algorytm_bez_filtracji(X):
             i += 1
         steps += 1 
 
-    return P, steps, comparisons
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+
+    results = {
+        "Non-dominated points" : P,
+        "Steps" : steps,
+        "Comparisons" : comparisons,
+        "Time (sec)" : elapsed_time
+    }
+
+    return results
 
 def dominuje(A, B, comparisions):
     # Punkt A dominuje nad punktem B, jeśli każda współrzędna A jest <= każdej współrzędnej B
@@ -56,6 +67,7 @@ def dominuje(A, B, comparisions):
     return czy_mniejszy
 
 def filtracja_zdominowanych(X):
+    start_time = time.time()
     n = len(X)
     usuniety = [False] * n
     P = [] 
@@ -87,7 +99,18 @@ def filtracja_zdominowanych(X):
             if not usuniety[k] and dominuje(Y, X[k], comparisions):
                 usuniety[k] = True
 
-    return P, steps, comparisions[0]
+    end_time = time.time()
+
+    elapsed_time = end_time - start_time
+    
+    results = {
+        "Non-dominated points" : P,
+        "Steps" : steps,
+        "Comparisons" : comparisions[0],
+        "Time (sec)" : elapsed_time
+    }
+
+    return results
 
 def odleglosc_kwadratowa(A, B):
     return sum((a - b) ** 2 for a, b in zip(A, B))
@@ -145,12 +168,18 @@ def run_benchmark(X):
     results = {}
 
     X_copy = X.copy().tolist()
-    P1, steps1, comparisons1 = algorytm_bez_filtracji(X_copy)
+    results1 = algorytm_bez_filtracji(X_copy)
+    P1 = results1["Non-dominated points"]
+    steps1 = results1["Steps"]
+    comparisons1 = results1["Comparisions"]
     results["Algorytm bez filtracji"] = {"Steps": steps1, "Comparisons": comparisons1, "Non-dominated": len(P1), "Points": P1}
 
 
     X_copy = X.copy().tolist()
-    P2, steps2, comparisons2 = filtracja_zdominowanych(X_copy)
+    results2 = filtracja_zdominowanych(X_copy)
+    P2 = results2["Non-dominated points"]
+    steps2 = results2["Steps"]
+    comparisons2 = results2["Comparisions"]
     results["Algorytm z filtracją"] = {"Steps": steps2, "Comparisons": comparisons2, "Non-dominated": len(P2), "Points": P2}
 
     results3 = algorytm_punkt_idealny(X.copy())
@@ -160,23 +189,3 @@ def run_benchmark(X):
     results["Algorytm z punktem idealnym"] = {"Steps": steps3, "Comparisons": comparisons3, "Non-dominated": len(P3), "Points": P3}
 
     return results
-
-def visualize_results(points, data, dimensions = 2):
-    if dimensions == 2:
-        plt.figure()
-        plt.scatter(data[:, 0], data[:, 1], label='Wszystkie punkty', alpha=0.5)
-        plt.scatter([p[0] for p in points], [p[1] for p in points], color='red', label='Punkty niezdominowane')
-        plt.xlabel("Kryterium 1")
-        plt.ylabel("Kryterium 2")
-        plt.legend()
-        plt.show()
-    elif dimensions == 3:
-        fig = plt.figure()
-        ax = fig.add_subplot(111, projection='3d')
-        ax.scatter(data[:, 0], data[:, 1], data[:, 2], label='Wszystkie punkty', alpha=0.5)
-        ax.scatter([p[0] for p in points], [p[1] for p in points], [p[2] for p in points], color='red', label='Punkty niezdominowane')
-        ax.set_xlabel("Kryterium 1")
-        ax.set_ylabel("Kryterium 2")
-        ax.set_zlabel("Kryterium 3")
-        ax.legend()
-        plt.show()
